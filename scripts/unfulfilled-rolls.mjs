@@ -24,9 +24,21 @@ Hooks.once('init', async function() {
         "fvtt": "Foundry VTT Digital roll",
         "input": "Manual input",
     };
-    
+
+    // Replace the `Roll` in the global namespace with `FulfillableRoll` class
+    Roll = FulfillableRoll;
     CONFIG.Dice.rolls.unshift(FulfillableRoll);
     //CONFIG.Dice.termTypes.DiceTerm = FulfillableRollTerm;
+
+    if ( game.system.id === "dnd5e" ) {
+        // Monkey patch the evaluate methods of the D20Roll and DamageRoll classes
+        CONFIG.Dice.D20Roll.prototype.evaluate = FulfillableRoll.prototype.evaluate;
+        CONFIG.Dice.D20Roll.prototype._evaluate = FulfillableRoll.prototype._evaluate;
+        CONFIG.Dice.D20Roll.prototype._evaluateSync = FulfillableRoll.prototype._evaluateSync;
+        CONFIG.Dice.DamageRoll.prototype.evaluate = FulfillableRoll.prototype.evaluate;
+        CONFIG.Dice.DamageRoll.prototype._evaluate = FulfillableRoll.prototype._evaluate;
+        CONFIG.Dice.DamageRoll.prototype._evaluateSync = FulfillableRoll.prototype._evaluateSync;
+    }
 });
 
 Hooks.on("renderSettings", (app, html, data) => {
