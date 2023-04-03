@@ -21,8 +21,8 @@ Hooks.once('init', async function() {
         { id: "d100", faces: 100, icon: "fa-percent" }
     ];
     CONFIG.Dice.FulfillmentMethods = {
-        "fvtt": "Foundry VTT Digital roll",
-        "input": "Manual input",
+        "fvtt": "Foundry VTT Digital Roll",
+        "input": "Manual Input",
     };
 
     // Replace the `Roll` in the global namespace with `FulfillableRoll` class
