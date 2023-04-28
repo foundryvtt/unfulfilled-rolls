@@ -24,6 +24,10 @@ export default class GodiceResolver extends FormApplication {
 
     /* -------------------------------------------- */
 
+    static socket = null;
+
+    /* -------------------------------------------- */
+
     /** @override */
     async getData(options={}) {
         const context = await super.getData(options);
@@ -82,11 +86,21 @@ export default class GodiceResolver extends FormApplication {
         }
 
         // Establish a websocket connection to the GoDice socket
-        this.socket = new WebSocket("ws://192.168.68.129:8596/FoundryVTT");
-        this.socket.onopen = () => {
-            console.log("GoDice socket opened");
+        if ( !GodiceResolver.socket ) {
+            GodiceResolver.socket = new WebSocket("ws://192.168.68.129:8596/FoundryVTT");
+            GodiceResolver.socket.onopen = () => {
+                console.log("GoDice socket opened");
+            }
+            GodiceResolver.socket.onclose = () => {
+                console.log("GoDice socket closed");
+            }
+            GodiceResolver.socket.onerror = (error) => {
+                console.log("GoDice socket error");
+                console.log(error);
+            }
         }
-        this.socket.onmessage = (event) => {
+
+        GodiceResolver.socket.onmessage = (event) => {
             console.log("GoDice socket message received");
             const data = JSON.parse(event.data);
             console.dir(data);
@@ -116,20 +130,14 @@ export default class GodiceResolver extends FormApplication {
                 }
             }
         }
-        this.socket.onclose = () => {
-            console.log("GoDice socket closed");
-        }
-        this.socket.onerror = (error) => {
-            console.log("GoDice socket error");
-            console.log(error);
-        }
+
     }
 
     /* -------------------------------------------- */
 
-    /** @override */
-    async close(options={}) {
-        this.socket.close();
-        return super.close(options);
-    }
+    // /** @override */
+    // async close(options={}) {
+    //     GodiceResolver.socket.close();
+    //     return super.close(options);
+    // }
 }

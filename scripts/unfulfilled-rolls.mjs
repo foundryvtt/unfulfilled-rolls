@@ -1,5 +1,6 @@
 import {FulfillableRoll} from "./FulfillableRoll.mjs";
 import DiceConfig from "./apps/diceConfiguration/dice-config.mjs";
+import GodiceResolver from "../apps/godice-resolver.js";
 
 Hooks.once('init', async function() {
 
@@ -23,7 +24,19 @@ Hooks.once('init', async function() {
     CONFIG.Dice.FulfillmentMethods = {
         "fvtt": "Foundry VTT Digital Roll",
         "input": "Manual Input",
+        "bluetooth": "Bluetooth Dice",
     };
+    CONFIG.Dice.BluetoothDieProviders = {
+        "none": {
+            label: "None",
+        },
+        "godice": {
+            label: "GoDice",
+            icon: "modules/unfulfilled-rolls/assets/godice.png",
+            url: "https://particula-tech.com/godice/",
+            app: GodiceResolver
+        }
+    }
 
     // Replace the `Roll` in the global namespace with `FulfillableRoll` class
     Roll = FulfillableRoll;

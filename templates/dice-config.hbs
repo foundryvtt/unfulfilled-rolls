@@ -1,9 +1,17 @@
 <form class="{{cssClass}} flexcol" autocomplete="off">
 
+    <div class="form-group">
+        <label>Bluetooth Die Provider</label>
+        <select name="bluetoothDieProvider">
+            {{!-- Render an option for each provider --}}
+            {{selectOptions bluetoothDieProviders selected=this.bluetoothDieProvider labelAttr="label"}}
+        </select>
+    </div>
+
     <section>
         {{!-- Render an option for each die size (d4, d6, d8, d10, d12, d20, percentile) --}}
         {{#each dieTypes}}
-            <div class="flexrow" data-die="{{this.id}}">
+            <div class="form-group" data-die="{{this.id}}">
                 {{!-- For each die, display its name, an icon representing it, and a dropdown to select how it's fulfilled --}}
                 <label><i class="far {{this.icon}}"></i> {{this.id}}</label>
                 <select name="{{this.id}}">

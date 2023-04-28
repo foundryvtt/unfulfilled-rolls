@@ -1,5 +1,6 @@
 import FulfillableRollTerm from "./FulfillableRollTerm.mjs";
 import GodiceResolver from "../apps/godice-resolver.js";
+import ManualResolver from "../apps/manual-resolver.js";
 
 export class FulfillableRoll extends Roll {
 
@@ -55,7 +56,8 @@ export class FulfillableRoll extends Roll {
                 array.push({
                     id: `d${term.faces}-${n}`,
                     faces: term.faces,
-                    randomValue: Math.ceil(CONFIG.Dice.randomUniform() * term.faces)
+                    randomValue: Math.ceil(CONFIG.Dice.randomUniform() * term.faces),
+                    fulfillmentMethod: fulfillmentMethod
                 });
             }
             return array;
@@ -65,9 +67,15 @@ export class FulfillableRoll extends Roll {
         let fulfilled = null;
         if ( toFulfill.length ) {
             console.dir(this, toFulfill);
-            // TODO: We need to make this more modular, but for now it's hardcoded
             const promise = new Promise(resolve => {
-                const resolver = new GodiceResolver(toFulfill, this, (data) => {
+
+                // If any of the terms are bluetooth, grab the current bluetooth resolver. Otherwise, grab the manualResolver
+                const needsBluetooth = toFulfill.some(term => term.fulfillmentMethod === "bluetooth");
+                const config = game.settings.get("unfulfilled-rolls", "diceSettings");
+                const bluetoothResolver = CONFIG.Dice.BluetoothDieProviders[config.bluetoothDieProvider].app;
+                const resolverApp = needsBluetooth ? bluetoothResolver : ManualResolver;
+
+                const resolver = new resolverApp(toFulfill, this, (data) => {
                     resolve(data);
                 });
                 resolver.render(true);

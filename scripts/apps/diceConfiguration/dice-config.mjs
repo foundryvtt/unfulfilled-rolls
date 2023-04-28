@@ -17,8 +17,8 @@ export default class DiceConfig extends FormApplication {
 
     /** @override */
     async getData(options={}) {
-        const data = await super.getData(options);
-        data.fulfillmentMethods = CONFIG.Dice.FulfillmentMethods;
+        const context = await super.getData(options);
+        context.fulfillmentMethods = CONFIG.Dice.FulfillmentMethods;
 
         const config = game.settings.get("unfulfilled-rolls", "diceSettings");
         const dieTypes = CONFIG.Dice.DieTypes;
@@ -26,9 +26,11 @@ export default class DiceConfig extends FormApplication {
         for ( const dieType of dieTypes ) {
             dieType.fulfillmentMethod = config[dieType.id] || "fvtt";
         }
-        data.dieTypes = dieTypes;
+        context.dieTypes = dieTypes;
+        context.bluetoothDieProviders = CONFIG.Dice.BluetoothDieProviders;
+        context.bluetoothDieProvider = config.bluetoothDieProvider || "none";
 
-        return data;
+        return context;
     }
 
     /* -------------------------------------------- */
