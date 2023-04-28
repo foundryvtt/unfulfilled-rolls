@@ -86,7 +86,7 @@ export default class GodiceResolver extends FormApplication {
         }
 
         // Establish a websocket connection to the GoDice socket
-        if ( !GodiceResolver.socket ) {
+        if ( !GodiceResolver.socket || GodiceResolver.socket.readyState === WebSocket.CLOSED ) {
             GodiceResolver.socket = new WebSocket("ws://192.168.68.129:8596/FoundryVTT");
             GodiceResolver.socket.onopen = () => {
                 console.log("GoDice socket opened");
@@ -110,7 +110,11 @@ export default class GodiceResolver extends FormApplication {
                 if ( input ) {
                     // Find the span sibling before the input field and add a " - Rolling..." message
                     const span = input.previousElementSibling;
-                    span.textContent += " - Rolling...";
+                    span.innerText += " - Rolling...";
+
+                    // Find the font awesome icon and apply the animation
+                    const icon = span.previousElementSibling;
+                    icon.classList.add("fa-beat-fade");
                 }
             }
             if ( data.event === "die_roll_ended" ) {
@@ -121,7 +125,11 @@ export default class GodiceResolver extends FormApplication {
 
                     // Find the span sibling before the input field and remove the " - Rolling..." message
                     const span = input.previousElementSibling;
-                    span.textContent = span.textContent.replace(" - Rolling...", " (Fulfilled)");
+                    span.innerText = span.innerText.replace(" - Rolling...", " (Fulfilled)");
+
+                    // Find the font awesome icon and remove the animation
+                    const icon = span.previousElementSibling;
+                    icon.classList.remove("fa-beat-fade");
                 }
 
                 // If all input fields have values, submit the form

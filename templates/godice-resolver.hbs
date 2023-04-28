@@ -1,18 +1,19 @@
 <form autocomplete="off">
     <div class="dice-roll">
         {{#if roll.options.flavor}}
-            <div class="dice-flavor">{{roll.options.flavor}}</div>
+            <h2>{{roll.options.flavor}}</h2>
         {{/if}}
         <div class="dice-result">
             <div class="dice-formula">{{roll._formula}}</div>
         </div>
     </div>
 
-    <div>
+    <div class="terms">
         {{#each terms}}
-            <div class="dice-term">
+            <div class="dice-term flexcol">
                 {{#if this.faces}}
-                    <span class="dice-term-faces">d{{this.faces}}</span>
+                    <i class="fa-solid {{this.icon}}"></i>
+                    <p class="dice-term-faces">d{{this.faces}}</p>
                 {{/if}}
                 <input type="text" class="dice-term-input" name="{{this.id}}" min="1" max="{{this.faces}}"
                        placeholder="{{this.randomValue}}" />
@@ -20,14 +21,14 @@
         {{/each}}
     </div>
 
-    <div class="dialog-buttons">
+    <div class="dialog-buttons flexrow">
         <button class="dialog-button ok default" data-button="ok">
             <i class="fas fa-check"></i>
-            OK
+            Submit
         </button>
-        <button class="dialog-button cancel" data-button="cancel">
-            <i class="fas fa-times"></i>
-            Cancel
-        </button>
+<!--        <button class="dialog-button cancel" data-button="cancel">-->
+<!--            <i class="fas fa-bolt-auto"></i>-->
+<!--            Roll automatically-->
+<!--        </button>-->
     </div>
 </form>

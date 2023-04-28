@@ -57,7 +57,8 @@ export class FulfillableRoll extends Roll {
                     id: `d${term.faces}-${n}`,
                     faces: term.faces,
                     randomValue: Math.ceil(CONFIG.Dice.randomUniform() * term.faces),
-                    fulfillmentMethod: fulfillmentMethod
+                    fulfillmentMethod: fulfillmentMethod,
+                    icon: CONFIG.Dice.DieTypes.find(d => d.id === dieSize).icon,
                 });
             }
             return array;
