@@ -1,0 +1,21 @@
+<form>
+    <div class="dice-roll">
+        {{#if roll.options.flavor}}
+            <div class="dice-flavor">{{roll.options.flavor}}</div>
+        {{/if}}
+        <div class="dice-result">
+            <div class="dice-formula">{{roll._formula}}</div>
+        </div>
+    </div>
+
+    <div>
+        {{#each terms}}
+            <div class="dice-term">
+                {{#if this.faces}}
+                    <span class="dice-term-faces">d{{this.faces}}</span>
+                {{/if}}
+                <input type="text" class="dice-term-input" name="{{this.id}}" min="1" max="{{this.faces}}" value="{{this.randomValue}}" />
+            </div>
+        {{/each}}
+    </div>
+</form>

@@ -1,11 +1,21 @@
 export default class FulfillableRollTerm extends DiceTerm {
 
-    async _evaluate({minimize=false, maximize=false}={}) {
+    evaluate({minimize=false, maximize=false, async=false, fulfilled=null}={}) {
+        if ( this._evaluated ) {
+            throw new Error(`The ${this.constructor.name} has already been evaluated and is now immutable`);
+        }
+        this._evaluated = true;
+        return async ? this._evaluate({minimize, maximize, fulfilled}) : this._evaluateSync({minimize, maximize});
+    }
+
+    /* -------------------------------------------- */
+
+    async _evaluate({minimize=false, maximize=false, fulfilled=null}={}) {
         if ( (this.number > 999) ) {
             throw new Error(`You may not evaluate a DiceTerm with more than 999 requested results`);
         }
         for ( let n=1; n <= this.number; n++ ) {
-            await this.roll({minimize, maximize});
+            await this.roll({minimize, maximize, fulfilled, n});
         }
         this._evaluateModifiers();
         return this;
@@ -14,11 +24,21 @@ export default class FulfillableRollTerm extends DiceTerm {
     /* -------------------------------------------- */
 
     /** @override */
-    async roll({minimize=false, maximize=false}={}) {
+    async roll({minimize=false, maximize=false, fulfilled, n}={}) {
         const roll = {result: undefined, active: true};
         if ( minimize ) roll.result = Math.min(1, this.faces);
         else if ( maximize ) roll.result = this.faces;
-        else roll.result = await this._fulfillRoll();
+        else {
+            // Grab the result from fulfilled
+            const id = `d${this.faces}-${n}`;
+            if ( fulfilled && fulfilled.has(id) ) {
+                const result = fulfilled.get(id);
+                roll.result = result;
+            }
+            else {
+                roll.result = await this._fulfillRoll();
+            }
+        }
         this.results.push(roll);
         return roll;
     }
@@ -34,25 +54,25 @@ export default class FulfillableRollTerm extends DiceTerm {
         const fulfillmentMethod = config[dieSize] || "fvtt";
         console.log(`Fulfillment method for ${dieSize}: ${fulfillmentMethod}`);
 
-        if (fulfillmentMethod === "input") {
-
-            const result = await Dialog.prompt({
-                title: `${dieSize} roll`,
-                content: `<p>Enter the result of the roll. Number should be between 1 and ${this.faces}</p>
-                          <input type="number" name="result" min="1" max="${this.faces}" value="${Math.ceil(CONFIG.Dice.randomUniform() * this.faces)}">
-                          <p>Press OK to submit the roll, or Cancel to cancel the roll.</p>`,
-                label: "Roll",
-                callback: html => html.find('[name="result"]').val()
-            });
-            if (result) {
-                return parseInt(result);
-            }
-
-            // const result = prompt(`Enter the result of the ${dieSize} roll`, this.faces);
-            // if (result) {
-            //     return parseInt(result);
-            // }
-        }
+        // if (fulfillmentMethod === "input") {
+        //
+        //     const result = await Dialog.prompt({
+        //         title: `${dieSize} roll`,
+        //         content: `<p>Enter the result of the roll. Number should be between 1 and ${this.faces}</p>
+        //                   <input type="number" name="result" min="1" max="${this.faces}" value="${Math.ceil(CONFIG.Dice.randomUniform() * this.faces)}">
+        //                   <p>Press OK to submit the roll, or Cancel to cancel the roll.</p>`,
+        //         label: "Roll",
+        //         callback: html => html.find('[name="result"]').val()
+        //     });
+        //     if (result) {
+        //         return parseInt(result);
+        //     }
+        //
+        //     // const result = prompt(`Enter the result of the ${dieSize} roll`, this.faces);
+        //     // if (result) {
+        //     //     return parseInt(result);
+        //     // }
+        // }
 
         // Default to the original FVTT roller
         return Math.ceil(CONFIG.Dice.randomUniform() * this.faces);

@@ -42,9 +42,74 @@ export class FulfillableRoll extends Roll {
         // Step 2 - Simplify remaining terms
         this.terms = FulfillableRoll.simplifyTerms(this.terms, validating);
 
-        // Step 3 - Evaluate remaining terms
+        // Step 3 - Determine what terms need to be fulfilled
+
+        const config = game.settings.get("unfulfilled-rolls", "diceSettings");
+        console.dir(this.terms);
+        const toFulfill = this.terms.reduce( (array, term) => {
+            const dieSize = `d${term.faces}`;
+            const fulfillmentMethod = config[dieSize] || "fvtt";
+            if ( fulfillmentMethod === "fvtt" ) return array;
+            for ( let n=1; n <= term.number; n++ ) {
+                array.push({
+                    id: `d${term.faces}-${n}`,
+                    faces: term.faces,
+                    randomValue: Math.ceil(CONFIG.Dice.randomUniform() * term.faces)
+                });
+            }
+            return array;
+        }, []);
+
+        // Display a dialog if there are terms to fulfill
+        let fulfilled = null;
+        if ( toFulfill.length ) {
+            console.dir(this, toFulfill);
+            const html = await renderTemplate("modules/unfulfilled-rolls/templates/roll-dialog.hbs",
+                {
+                    terms: toFulfill,
+                    roll: this,
+                });
+            const promise = new Promise(resolve => {
+                const dialog = new Dialog({
+                    title: "Fulfill roll",
+                    content: html,
+                    buttons: {
+                        ok: {
+                            icon: '<i class="fas fa-check"></i>',
+                            label: "OK",
+                            callback: () => {
+                                const results = toFulfill.reduce( (map, term) => {
+                                    const input = dialog.element.find(`input[name="${term.id}"]`);
+                                    const value = input.length ? input.val() : null;
+                                    map.set(term.id, value);
+                                    return map;
+                                }, new Map());
+                                resolve(results);
+                            }
+                        },
+                        cancel: {
+                            icon: '<i class="fas fa-times"></i>',
+                            label: "Cancel",
+                            callback: () => {
+                                resolve(null);
+                            }
+                        }
+                    },
+                    default: "ok",
+                    close: () => {
+                        resolve(null);
+                    }
+                });
+                dialog.render(true);
+            });
+            fulfilled = await promise;
+            console.dir(fulfilled);
+        }
+
+        // Step 4 - Evaluate the final expression
         for ( let term of this.terms ) {
-            if ( !term._evaluated ) await term.evaluate({minimize, maximize, async: true});
+            if ( !term._evaluated ) await term.evaluate(
+                {minimize, maximize, async: true, fulfilled: fulfilled});
         }
 
         // Step 4 - Evaluate the final expression
