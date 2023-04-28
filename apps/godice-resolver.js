@@ -26,6 +26,8 @@ export default class GodiceResolver extends FormApplication {
 
     static socket = null;
 
+    static createdChatMessages = [];
+
     /* -------------------------------------------- */
 
     /** @override */
@@ -90,6 +92,22 @@ export default class GodiceResolver extends FormApplication {
             GodiceResolver.socket = new WebSocket("ws://192.168.68.129:8596/FoundryVTT");
             GodiceResolver.socket.onopen = () => {
                 console.log("GoDice socket opened");
+
+                // Send a message to the GoDice socket to flash the die
+                const payload = JSON.stringify({
+                    "event": "blink_die",
+                    "die": {
+                        "id": "7030229a-496d-4b25-960b-894a9ccc9129"
+                    },
+                    "settings": {
+                        "blinks_amount": 4,
+                        "color": [0.996, 0.384, 0.118],
+                        "duration_on": 0.2,
+                        "duration_off": 0.2,
+                        "is_mixed": true,
+                    }
+                });
+                GodiceResolver.socket.send(payload);
             }
             GodiceResolver.socket.onclose = () => {
                 console.log("GoDice socket closed");
@@ -114,7 +132,17 @@ export default class GodiceResolver extends FormApplication {
 
                     // Find the font awesome icon and apply the animation
                     const icon = span.previousElementSibling;
-                    icon.classList.add("fa-beat-fade");
+                    icon.classList.add("fa-spin-pulse");
+
+                    // Create a chat message to indicate that the die is rolling
+                    const message = {
+                        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+                        content: `<i class="fas ${input.dataset.icon} fa-spin-pulse"></i> Rolling ${data.die.shell}...`,
+                        type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+                    }
+                    ChatMessage.create(message).then(createdChatMessage => {
+                        GodiceResolver.createdChatMessages.push(createdChatMessage);
+                    });
                 }
             }
             if ( data.event === "die_roll_ended" ) {
@@ -129,7 +157,17 @@ export default class GodiceResolver extends FormApplication {
 
                     // Find the font awesome icon and remove the animation
                     const icon = span.previousElementSibling;
-                    icon.classList.remove("fa-beat-fade");
+                    icon.classList.remove("fa-spin-pulse");
+
+                    // Add a fulfilled class to the parent .dice-term
+                    const term = span.closest(".dice-term");
+                    term.classList.add("fulfilled");
+
+                    // Delete the chat message that indicated that the die was rolling
+                    const createdChatMessage = GodiceResolver.createdChatMessages.pop();
+                    if ( createdChatMessage ) {
+                        createdChatMessage.delete();
+                    }
                 }
 
                 // If all input fields have values, submit the form
@@ -137,6 +175,24 @@ export default class GodiceResolver extends FormApplication {
                     this.submit();
                 }
             }
+        }
+
+        if ( GodiceResolver.socket.readyState === WebSocket.OPEN ) {
+            // Send a message to the GoDice socket to flash the die
+            const payload = JSON.stringify({
+                "event": "blink_die",
+                "die": {
+                    "id": "7030229a-496d-4b25-960b-894a9ccc9129"
+                },
+                "settings": {
+                    "blinks_amount": 4,
+                    "color": [0.996, 0.384, 0.118],
+                    "duration_on": 0.2,
+                    "duration_off": 0.2,
+                    "is_mixed": true,
+                }
+            });
+            GodiceResolver.socket.send(payload);
         }
 
     }
