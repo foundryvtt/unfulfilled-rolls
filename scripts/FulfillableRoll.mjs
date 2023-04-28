@@ -1,4 +1,5 @@
 import FulfillableRollTerm from "./FulfillableRollTerm.mjs";
+import GodiceResolver from "../apps/godice-resolver.js";
 
 export class FulfillableRoll extends Roll {
 
@@ -64,43 +65,12 @@ export class FulfillableRoll extends Roll {
         let fulfilled = null;
         if ( toFulfill.length ) {
             console.dir(this, toFulfill);
-            const html = await renderTemplate("modules/unfulfilled-rolls/templates/roll-dialog.hbs",
-                {
-                    terms: toFulfill,
-                    roll: this,
-                });
+            // TODO: We need to make this more modular, but for now it's hardcoded
             const promise = new Promise(resolve => {
-                const dialog = new Dialog({
-                    title: "Fulfill roll",
-                    content: html,
-                    buttons: {
-                        ok: {
-                            icon: '<i class="fas fa-check"></i>',
-                            label: "OK",
-                            callback: () => {
-                                const results = toFulfill.reduce( (map, term) => {
-                                    const input = dialog.element.find(`input[name="${term.id}"]`);
-                                    const value = input.length ? input.val() : null;
-                                    map.set(term.id, value);
-                                    return map;
-                                }, new Map());
-                                resolve(results);
-                            }
-                        },
-                        cancel: {
-                            icon: '<i class="fas fa-times"></i>',
-                            label: "Cancel",
-                            callback: () => {
-                                resolve(null);
-                            }
-                        }
-                    },
-                    default: "ok",
-                    close: () => {
-                        resolve(null);
-                    }
+                const resolver = new GodiceResolver(toFulfill, this, (data) => {
+                    resolve(data);
                 });
-                dialog.render(true);
+                resolver.render(true);
             });
             fulfilled = await promise;
             console.dir(fulfilled);
