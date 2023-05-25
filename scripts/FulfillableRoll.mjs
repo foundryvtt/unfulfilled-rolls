@@ -1,5 +1,4 @@
 import FulfillableRollTerm from "./FulfillableRollTerm.mjs";
-import GodiceResolver from "../apps/godice-resolver.js";
 import ManualResolver from "../apps/manual-resolver.js";
 
 export class FulfillableRoll extends Roll {
@@ -45,9 +44,8 @@ export class FulfillableRoll extends Roll {
         this.terms = FulfillableRoll.simplifyTerms(this.terms, validating);
 
         // Step 3 - Determine what terms need to be fulfilled
-
         const config = game.settings.get("unfulfilled-rolls", "diceSettings");
-        console.dir(this.terms);
+        //console.dir(this.terms);
         const toFulfill = this.terms.reduce( (array, term) => {
             const dieSize = `d${term.faces}`;
             const fulfillmentMethod = config[dieSize] || "fvtt";
@@ -67,7 +65,7 @@ export class FulfillableRoll extends Roll {
         // Display a dialog if there are terms to fulfill
         let fulfilled = null;
         if ( toFulfill.length ) {
-            console.dir(this, toFulfill);
+            //console.dir(this, toFulfill);
             const promise = new Promise(resolve => {
 
                 // If any of the terms are bluetooth, grab the current bluetooth resolver. Otherwise, grab the manualResolver
@@ -75,14 +73,13 @@ export class FulfillableRoll extends Roll {
                 const config = game.settings.get("unfulfilled-rolls", "diceSettings");
                 const bluetoothResolver = CONFIG.Dice.BluetoothDieProviders[config.bluetoothDieProvider].app;
                 const resolverApp = needsBluetooth ? bluetoothResolver : ManualResolver;
-
                 const resolver = new resolverApp(toFulfill, this, (data) => {
                     resolve(data);
                 });
                 resolver.render(true);
             });
             fulfilled = await promise;
-            console.dir(fulfilled);
+            //console.dir(fulfilled);
         }
 
         // Step 4 - Evaluate the final expression
@@ -90,8 +87,6 @@ export class FulfillableRoll extends Roll {
             if ( !term._evaluated ) await term.evaluate(
                 {minimize, maximize, async: true, fulfilled: fulfilled});
         }
-
-        // Step 4 - Evaluate the final expression
         this._total = this._evaluateTotal();
         return this;
     }
@@ -136,7 +131,18 @@ export class FulfillableRoll extends Roll {
         // For any terms of type Die, see if we should replace them with a FulfillableRollTerm
         for ( let [i, t] of result.entries() ) {
             if ( t.faces ) {
-                result[i] = new FulfillableRollTerm({faces: t.faces, number: t.number});
+                result[i] = new FulfillableRollTerm({
+                    number: t.number,
+                    faces: t.faces,
+                    modifiers: t.modifiers,
+                    results: t.results,
+                    options: t.options
+                });
+
+                result[i].MODIFIERS = Object.entries(t.constructor.MODIFIERS).reduce((obj, entry) => {
+                    obj[entry[0]] = t[entry[1]];
+                    return obj;
+                }, {});
             }
         }
         return result;

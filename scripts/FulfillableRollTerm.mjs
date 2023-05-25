@@ -1,5 +1,9 @@
 export default class FulfillableRollTerm extends DiceTerm {
 
+    MODIFIERS = {};
+
+    /* -------------------------------------------- */
+
     evaluate({minimize=false, maximize=false, async=false, fulfilled=null}={}) {
         if ( this._evaluated ) {
             throw new Error(`The ${this.constructor.name} has already been evaluated and is now immutable`);
@@ -33,7 +37,7 @@ export default class FulfillableRollTerm extends DiceTerm {
             const id = `d${this.faces}-${n}`;
             if ( fulfilled && fulfilled.has(id) ) {
                 const result = fulfilled.get(id);
-                roll.result = result;
+                roll.result = Number.parseInt(result);
             }
             else {
                 roll.result = await this._fulfillRoll();
@@ -46,35 +50,7 @@ export default class FulfillableRollTerm extends DiceTerm {
     /* -------------------------------------------- */
 
     async _fulfillRoll() {
-        //if ( this._fromData ) return;
-        console.log("FulfillableRollTerm._fulfillRoll");
-        const config = game.settings.get("unfulfilled-rolls", "diceSettings");
-
-        const dieSize = `d${this.faces}`;
-        const fulfillmentMethod = config[dieSize] || "fvtt";
-        console.log(`Fulfillment method for ${dieSize}: ${fulfillmentMethod}`);
-
-        // if (fulfillmentMethod === "input") {
-        //
-        //     const result = await Dialog.prompt({
-        //         title: `${dieSize} roll`,
-        //         content: `<p>Enter the result of the roll. Number should be between 1 and ${this.faces}</p>
-        //                   <input type="number" name="result" min="1" max="${this.faces}" value="${Math.ceil(CONFIG.Dice.randomUniform() * this.faces)}">
-        //                   <p>Press OK to submit the roll, or Cancel to cancel the roll.</p>`,
-        //         label: "Roll",
-        //         callback: html => html.find('[name="result"]').val()
-        //     });
-        //     if (result) {
-        //         return parseInt(result);
-        //     }
-        //
-        //     // const result = prompt(`Enter the result of the ${dieSize} roll`, this.faces);
-        //     // if (result) {
-        //     //     return parseInt(result);
-        //     // }
-        // }
-
-        // Default to the original FVTT roller
+        // This term was not already fulfilled, so use the original FVTT roller
         return Math.ceil(CONFIG.Dice.randomUniform() * this.faces);
     }
 
@@ -85,5 +61,63 @@ export default class FulfillableRollTerm extends DiceTerm {
         term._evaluated = data.evaluated ?? true;
         term._fromData = true;
         return term;
+    }
+
+    /* -------------------------------------------- */
+
+    /**
+     * Sequentially evaluate each dice roll modifier by passing the term to its evaluation function
+     * Augment or modify the results array.
+     * @private
+     */
+    _evaluateModifiers() {
+        const requested = foundry.utils.deepClone(this.modifiers);
+        this.modifiers = [];
+
+        // Iterate over requested modifiers
+        for ( let m of requested ) {
+            let command = m.match(/[A-z]+/)[0].toLowerCase();
+
+            // Matched command
+            if ( command in this.MODIFIERS ) {
+                this._evaluateModifier(command, m);
+                continue;
+            }
+
+            // Unmatched compound command
+            // Sort modifiers from longest to shortest to ensure that the matching algorithm greedily matches the longest
+            // prefixes first.
+            const modifiers = Object.keys(this.MODIFIERS).sort((a, b) => b.length - a.length);
+            while ( !!command ) {
+                let matched = false;
+                for ( let cmd of modifiers ) {
+                    if ( command.startsWith(cmd) ) {
+                        matched = true;
+                        this._evaluateModifier(cmd, cmd);
+                        command = command.replace(cmd, "");
+                        break;
+                    }
+                }
+                if ( !matched ) command = "";
+            }
+        }
+    }
+
+    /* -------------------------------------------- */
+
+    /**
+     * Evaluate a single modifier command, recording it in the array of evaluated modifiers
+     * @param {string} command        The parsed modifier command
+     * @param {string} modifier       The full modifier request
+     * @private
+     */
+    _evaluateModifier(command, modifier) {
+        let fn = this.MODIFIERS[command];
+        if ( typeof fn === "string" ) fn = this[fn];
+        if ( fn instanceof Function ) {
+            const result = fn.call(this, modifier);
+            const earlyReturn = (result === false) || (result === this); // handling this is backwards compatibility
+            if ( !earlyReturn ) this.modifiers.push(modifier.toLowerCase());
+        }
     }
 }
