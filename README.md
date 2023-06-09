@@ -1,4 +1,4 @@
-![](https://img.shields.io/badge/Foundry-v10-informational)
+![](https://img.shields.io/badge/Foundry-v11-informational)
 <!--- Downloads @ Latest Badge -->
 <!--- replace <user>/<repo> with your username/repository -->
 <!--- ![Latest Release Download Count](https://img.shields.io/github/downloads/<user>/<repo>/latest/module.zip) -->
@@ -8,64 +8,194 @@
 <!--- ![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2F<your-module-name>&colorB=4aa94a) -->
 
 
-# How to use this Template to create a versioned Release
+# Unfulfilled Rolls
 
-1. Open your repository's releases page.
+Allows individual rolls to be fulfilled by other sources
 
-![Where to click to open repository releases.](https://user-images.githubusercontent.com/7644614/93409301-9fd25080-f864-11ea-9e0c-bdd09e4418e4.png)
+## Configuring per-die resolution methods
 
-2. Click "Draft a new release"
+A new Sidebar app is added called "Open Dice Configuration"
 
-![Draft a new release button.](https://user-images.githubusercontent.com/7644614/93409364-c1333c80-f864-11ea-89f1-abfcb18a8d9f.png)
+![image](https://github.com/foundryvtt/unfulfilled-rolls/assets/15639841/368c59c1-dba4-4002-8e74-d04091e0d318)
 
-3. Fill out the release version as the tag name.
+In this app, each User (client setting) may pick how each die is resolved - via Foundry VTT digital rolling, via manual input, or via a bluetooth provider - as well as what Bluetooth provider they are using (requires a separate module install for the bluetooth provider, such as the GoDice module).
 
-If you want to add details at this stage you can, or you can always come back later and edit them.
+![image](https://github.com/foundryvtt/unfulfilled-rolls/assets/15639841/ab0f26c2-1cb5-4e64-b8ee-9f82ace5864e)
 
-![Release Creation Form](https://user-images.githubusercontent.com/7644614/93409543-225b1000-f865-11ea-9a19-f1906a724421.png)
+## An example roll
 
-4. Hit submit.
+In this example, d20's and d8's are configured for Bluetooth resolution, while d4 is Foundry VTT Digital Roll.
 
-5. Wait a few minutes.
+`/roll 2d20 + d8 + d4 + 4`
 
-A Github Action will run to populate the `module.json` and `module.zip` with the correct urls that you can then use to distribute this release. You can check on its status in the "Actions" tab.
+Unfulfilled rolls works with the Foundry VTT dice rolling workflow to determine that there are terms that need resolution (the 2d20 and the d8), and displays a window - note that it gives the full roll for context, but only prompts resolution of the ones marked
 
-![Actions Tab](https://user-images.githubusercontent.com/7644614/93409820-c1800780-f865-11ea-8c6b-c3792e35e0c8.png)
+![image](https://github.com/foundryvtt/unfulfilled-rolls/assets/15639841/d2bdde9f-130f-436b-bc39-5c372f1c9adb)
 
-6. Grab the module.json url from the release's details page.
+Inside of the resolution app, the following two parameters are given:
 
-![image](https://user-images.githubusercontent.com/7644614/93409960-10c63800-f866-11ea-83f6-270cc5d10b71.png)
+`terms`
+The array of terms that need to be fulfilled
+```json
+[
+  {
+    "id": "d20-1",
+    "faces": 20,
+    "randomValue": 12,
+    "fulfillmentMethod": "bluetooth",
+    "icon": "fa-dice-d20"
+  },
+  {
+    "id": "d20-2",
+    "faces": 20,
+    "randomValue": 17,
+    "fulfillmentMethod": "bluetooth",
+    "icon": "fa-dice-d20"
+  },
+  {
+    "id": "d8-1",
+    "faces": 8,
+    "randomValue": 7,
+    "fulfillmentMethod": "bluetooth",
+    "icon": "fa-dice-d8"
+  }
+]
+```
 
-This `module.json` will only ever point at this release's `module.zip`, making it useful for sharing a specific version for compatibility purposes.
+`roll`
+The originating Roll
+```json
+{
+  "class": "FulfillableRoll",
+  "options": {},
+  "dice": [],
+  "formula": "2d20 + d8 + d4 + 4",
+  "terms": [
+    {
+      "class": "FulfillableRollTerm",
+      "options": {},
+      "evaluated": false,
+      "number": 2,
+      "faces": 20,
+      "modifiers": [],
+      "results": []
+    },
+    {
+      "class": "OperatorTerm",
+      "options": {},
+      "evaluated": false,
+      "operator": "+"
+    },
+    {
+      "class": "FulfillableRollTerm",
+      "options": {},
+      "evaluated": false,
+      "number": 1,
+      "faces": 8,
+      "modifiers": [],
+      "results": []
+    },
+    {
+      "class": "OperatorTerm",
+      "options": {},
+      "evaluated": false,
+      "operator": "+"
+    },
+    {
+      "class": "FulfillableRollTerm",
+      "options": {},
+      "evaluated": false,
+      "number": 1,
+      "faces": 4,
+      "modifiers": [],
+      "results": []
+    },
+    {
+      "class": "OperatorTerm",
+      "options": {},
+      "evaluated": false,
+      "operator": "+"
+    },
+    {
+      "class": "NumericTerm",
+      "options": {},
+      "evaluated": false,
+      "number": 4
+    }
+  ],
+  "evaluated": true
+}
+```
 
-7. You can use the url `https://github.com/<user>/<repo>/releases/latest/download/module.json` to refer to the manifest.
+## Registering a new Provider
 
-This is the url you want to use to install the module typically, as it will get updated automatically.
+Currently only bluetooth providers are supported, but more types can be added fairly easily by following the pattern bluetooth providers uses.
 
-# How to List Your Releases on Package Admin
+```js
+Hooks.once('unfulfilled-rolls-bluetooth', function(providers) {
+    return foundry.utils.mergeObject(providers, {
+        "godice": {
+            label: "GoDice",
+            app: GodiceResolver
+        }
+    })
+});
+```
 
-To request a package listing for your first release, go to the [Package Submission Form](https://foundryvtt.com/packages/submit) (accessible via a link at the bottom of the "[Systems and Modules](https://foundryvtt.com/packages/)" page on the Foundry website).
+### Implementing a Provider
 
-Fill in the form. "Package Name" must match the name in the module manifest.  Package Title will be the display name for the package.  Package URL should be your repo URL.
-![image](https://user-images.githubusercontent.com/36359784/120664263-b49e5500-c482-11eb-9126-af7006389903.png)
+Each provider needs to register an application to handle the roll resolution. Here is a simplified example:
+
+```js
+export default class ExampleResolver extends FormApplication {
+
+    constructor(terms, roll, callback) {
+        super({});
+        this.terms = terms;
+        this.roll = roll;
+        this.callback = callback;
+    }
+
+    /* -------------------------------------------- */
+
+    static get defaultOptions() {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            id: "example-resolver",
+            template: "modules/example/templates/example-resolver.hbs",
+            title: "Example Resolver",
+            popOut: true,
+            width: 720,
+            submitOnChange: false,
+            submitOnClose: true,
+            closeOnSubmit: true
+        });
+    }
 
 
-One of the Foundry staff will typically get back to you with an approval or any further questions within a few days, and give you access to the package admin pages.
+    /* -------------------------------------------- */
 
-Once you have access to the [module admin page](https://foundryvtt.com/admin/packages/package/), you can release a new version by going into the page for your module, scrolling to the bottom, and filling in a new Package Version.
+    /** @override */
+    async getData(options={}) {
+        const context = await super.getData(options);
 
-When listing a new version, Version should be the version number you set above, and the Manifest URL should be the manifest __for that specific version__ (do not use /latest/ here).
-![image](https://user-images.githubusercontent.com/36359784/120664346-c4b63480-c482-11eb-9d8b-731b50d70939.png)
+        context.terms = this.terms;
+        context.roll = this.roll;
 
-> ### :warning: Important :warning:
-> 
-> It is very important that you use the specific release manifest url, and not the `/latest` url here. For more details about why this is important and how Foundry Installs/Updates packages, read [this wiki article](https://foundryvtt.wiki/en/development/guides/releases-and-history).
-
-Clicking "Save" in the bottom right will save the new version, which means that anyone installing your module from within Foundry will get that version, and a post will be generated in the #release-announcements channel on the official Foundry VTT Discord.
+        return context;
+    }
 
 
-# FoundryVTT Module
+    /* -------------------------------------------- */
 
-Does something, probably
-
-## Changelog
+    /** @override */
+    async _updateObject(event, formData) {
+        // Turn the entries into a map
+        const fulfilled = new Map();
+        for ( const [id, result] of Object.entries(formData) ) {
+            // Parse the result as a number
+            fulfilled.set(id, Number(result));
+        }
+        this.callback(fulfilled);
+    }
+}
+```
