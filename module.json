@@ -1,7 +1,7 @@
 {
   "id": "unfulfilled-rolls",
   "title": "Unfulfilled Rolls",
-  "description": "allows individual rolls to be fulfilled by other sources ",
+  "description": "Allows individual rolls to be fulfilled by other sources.",
   "version": "#{VERSION}#",
   "library": "false",
   "manifestPlusVersion": "1.2.0",
