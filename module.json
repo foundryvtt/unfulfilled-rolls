@@ -28,7 +28,6 @@
   "styles": [
     "styles/unfulfilled-rolls.css"
   ],
-  "languages": [],
   "url": "#{URL}#",
   "manifest": "#{MANIFEST}#",
   "download": "#{DOWNLOAD}#",
