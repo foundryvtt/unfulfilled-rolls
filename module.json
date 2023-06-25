@@ -1,7 +1,7 @@
 {
   "id": "unfulfilled-rolls",
   "title": "Unfulfilled Rolls",
-  "description": "Allows individual rolls to be fulfilled by other sources.",
+  "description": "Allows Dice rolls in Foundry Virtual Tabletop to be fulfilled by external sources like bluetooth dice or manual input.",
   "version": "#{VERSION}#",
   "library": "false",
   "manifestPlusVersion": "1.2.0",
@@ -12,8 +12,8 @@
   },
   "authors": [
     {
-      "name": "Cody Swendrowski",
-      "discord": "cswendrowski#9701"
+      "name": "Foundry Virtual Tabletop Team",
+      "website": "https://foundryvtt.com"
     }
   ],
   "relationships": {
