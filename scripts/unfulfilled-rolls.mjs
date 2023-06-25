@@ -1,8 +1,9 @@
-import FulfillableRoll from "./fulfillable-roll.mjs";
 import DiceConfig from "./apps/dice-config.mjs";
+import {_rollEvaluate, _dieEvaluate} from "./fulfillable-roll.mjs";
 
 Hooks.once('init', async function() {
 
+  // Register configuration setting
   game.settings.register("unfulfilled-rolls", "diceSettings", {
     config: false,
     default: {},
@@ -25,27 +26,15 @@ Hooks.once('init', async function() {
     "bluetooth": "Bluetooth Dice",
   };
 
-  let providers = {
-    "none": {
-      label: "None",
-    },
+  // Provider configuration
+  CONFIG.Dice.BluetoothDieProviders = {
+    none: {label: "None"},
   };
-  Hooks.callAll("unfulfilled-rolls-bluetooth", providers);
-  CONFIG.Dice.BluetoothDieProviders = providers;
+  Hooks.callAll("unfulfilled-rolls-bluetooth", CONFIG.Dice.BluetoothDieProviders);
 
-  // Replace the `Roll` in the global namespace with `FulfillableRoll` class
-  Roll = FulfillableRoll;
-  CONFIG.Dice.rolls.unshift(FulfillableRoll);
-
-  if ( game.system.id === "dnd5e" ) {
-    // Monkey patch the evaluate methods of the D20Roll and DamageRoll classes
-    CONFIG.Dice.D20Roll.prototype.evaluate = FulfillableRoll.prototype.evaluate;
-    CONFIG.Dice.D20Roll.prototype._evaluate = FulfillableRoll.prototype._evaluate;
-    CONFIG.Dice.D20Roll.prototype._evaluateSync = FulfillableRoll.prototype._evaluateSync;
-    CONFIG.Dice.DamageRoll.prototype.evaluate = FulfillableRoll.prototype.evaluate;
-    CONFIG.Dice.DamageRoll.prototype._evaluate = FulfillableRoll.prototype._evaluate;
-    CONFIG.Dice.DamageRoll.prototype._evaluateSync = FulfillableRoll.prototype._evaluateSync;
-  }
+  // Patch into async Roll and Die evaluation methods
+  Roll.prototype._evaluate = _rollEvaluate;
+  Die.prototype._evaluate = _dieEvaluate;
 });
 
 Hooks.on("renderSettings", (app, html, data) => {
