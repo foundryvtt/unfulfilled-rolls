@@ -1,5 +1,6 @@
 import ManualResolver from "./apps/manual-resolver.mjs";
 const _rollEvaluateOriginal = Roll.prototype._evaluate;
+const _dieEvaluateOriginal = Die.prototype._evaluate;
 
 /**
  * Patch the asynchronous Roll#_evaluate method to handle logistics of manual fulfillment.
@@ -34,6 +35,7 @@ export async function _rollEvaluate(options) {
  * @returns {Promise<Die>}        The evaluated Die term
  */
 export async function _dieEvaluate(options) {
+  if ( !this._fulfilled?.length > 0 ) return _dieEvaluateOriginal.call(this, options);
   if ( this.number > 999 ) throw new Error("You may not evaluate a DiceTerm with more than 999 requested results.");
   for ( let n=0; n < this.number; n++ ) {
     const v = this._fulfilled[n];

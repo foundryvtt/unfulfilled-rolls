@@ -10,6 +10,13 @@ Hooks.once('init', async function() {
     type: Object,
     scope: "client"
   });
+  game.settings.registerMenu("unfulfilled-rolls", "configuration", {
+    name: "Dice Configuration",
+    label: "Configure Dice",
+    icon: "fa-solid fa-dice-d20",
+    type: DiceConfig,
+    restricted: false
+  });
 
   CONFIG.Dice.DieTypes = [
     { id: "d4", faces: 4, icon: "fa-dice-d4" },
@@ -35,16 +42,4 @@ Hooks.once('init', async function() {
   // Patch into async Roll and Die evaluation methods
   Roll.prototype._evaluate = _rollEvaluate;
   Die.prototype._evaluate = _dieEvaluate;
-});
-
-Hooks.on("renderSettings", (app, html, data) => {
-  const diceConfigButton = document.createElement("button");
-  diceConfigButton.type = "button";
-  diceConfigButton.classList.add("open-dice-config");
-  diceConfigButton.innerHTML = `<i class="fas fa-dice-d20"></i> Open Dice Configuration`;
-  diceConfigButton.addEventListener("click", () => {
-    const diceConfig = new DiceConfig();
-    diceConfig.render(true);
-  });
-  html.find("button[data-action='controls']").after(diceConfigButton);
 });

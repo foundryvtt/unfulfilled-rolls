@@ -3,22 +3,22 @@
     <div class="form-group">
         <label>Bluetooth Die Provider</label>
         <select name="bluetoothDieProvider">
-            {{!-- Render an option for each provider --}}
             {{selectOptions bluetoothDieProviders selected=this.bluetoothDieProvider labelAttr="label"}}
         </select>
     </div>
 
     <section>
-        {{!-- Render an option for each die size (d4, d6, d8, d10, d12, d20, percentile) --}}
         {{#each dieTypes}}
-            <div class="form-group" data-die="{{this.id}}">
-                {{!-- For each die, display its name, an icon representing it, and a dropdown to select how it's fulfilled --}}
-                <label><i class="far {{this.icon}}"></i> {{this.id}}</label>
-                <select name="{{this.id}}">
-                    {{!-- Render an option for each fulfillment method --}}
-                    {{selectOptions ../fulfillmentMethods selected=this.fulfillmentMethod}}
-                </select>
-            </div>
+        <div class="form-group" data-die="{{this.id}}">
+            <label><i class="far {{this.icon}}"></i> {{this.id}}</label>
+            <select name="{{this.id}}">
+                {{selectOptions ../fulfillmentMethods selected=this.fulfillmentMethod}}
+            </select>
+        </div>
         {{/each}}
     </section>
+
+    <footer>
+        <button type="submit"><i class="fa-solid fa-save"></i> {{localize "Save"}}</button>
+    </footer>
 </form>

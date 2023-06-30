@@ -7,9 +7,9 @@ export default class DiceConfig extends FormApplication {
       title: "Dice Configuration",
       popOut: true,
       width: 720,
-      submitOnChange: true,
-      submitOnClose: true,
-      closeOnSubmit: false
+      submitOnChange: false,
+      submitOnClose: false,
+      closeOnSubmit: true
     });
   }
 
