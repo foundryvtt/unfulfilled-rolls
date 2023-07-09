@@ -3,6 +3,13 @@ const _rollEvaluateOriginal = Roll.prototype._evaluate;
 const _dieEvaluateOriginal = Die.prototype._evaluate;
 
 /**
+ * @typedef {Object} FulfillableTerm
+ * @property {DiceTerm} term
+ * @property {number} index
+ * @property {string} method
+ */
+
+/**
  * Patch the asynchronous Roll#_evaluate method to handle logistics of manual fulfillment.
  * @param {object} options      Options passed to the Roll#_evaluate method
  * @returns {Promise<Roll>}     The evaluated Roll instance
@@ -14,10 +21,11 @@ export async function _rollEvaluate(options) {
   const fulfillable = _identifyFulfillableTerms(this.terms, config);
   if ( fulfillable.length ) {
     const results = await _displayFulfillmentDialog(this, fulfillable, config);
-    for ( const {term} of fulfillable ) {
+    for ( const {term, index} of fulfillable ) {
       const fulfilled = [];
       for ( let i=0; i<term.number; i++ ) {
-        fulfilled.push(results.get(`d${term.faces}-${i}`));
+        const resultId = `d${term.faces}-${index}-${i}`;
+        fulfilled.push(results.get(resultId));
       }
       term._fulfilled = fulfilled;
     }
@@ -52,16 +60,16 @@ export async function _dieEvaluate(options) {
  * Identify terms in a Roll instance which are able to be externally fulfilled.
  * @param {RollTerm[]} terms      Terms of the Roll instance
  * @param {object} config         The unfulfilled-rolls.diceSettings configuration
- * @returns {{term: RollTerm, method:string}[]} An array of identified terms
+ * @returns {FulfillableTerm[]}   An array of identified terms
  * @private
  */
 function _identifyFulfillableTerms(terms, config) {
   const toFulfill = [];
-  for ( const term of terms ) {
+  for ( const [i, term] of terms.entries() ) {
     if ( !(term instanceof Die) ) continue;
     const method = config[`d${term.faces}`];
     if ( !method || (method === "fvtt") ) continue;
-    toFulfill.push({term, method});
+    toFulfill.push({term, method, index: i});
   }
   return toFulfill;
 }
@@ -71,10 +79,10 @@ function _identifyFulfillableTerms(terms, config) {
 /**
  * Configure and render the resolver application for externally fulfilled rolls.
  * Await the completion of the dialog before proceeding with roll evaluation.
- * @param {Roll} roll               The Roll instance being configured
- * @param {{term: RollTerm, method: string}} terms    Identified fulfillable terms
- * @param {object} config           The unfulfilled-rolls.diceSettings configuration
- * @returns {Promise<Map<number>>}  A map of externally fulfilled rolls
+ * @param {Roll} roll                 The Roll instance being configured
+ * @param {FulfillableTerm[]} terms   Identified fulfillable terms
+ * @param {object} config             The unfulfilled-rolls.diceSettings configuration
+ * @returns {Promise<Map<number>>}    A map of externally fulfilled rolls
  * @private
  */
 async function _displayFulfillmentDialog(roll, terms, config) {
@@ -82,12 +90,12 @@ async function _displayFulfillmentDialog(roll, terms, config) {
   let resolverApp = ManualResolver;
 
   // Expand terms to individual rolls which are required
-  const dice = terms.reduce((rolls, {term, method}) => {
+  const dice = terms.reduce((rolls, {term, method, index}) => {
     const denom = `d${term.faces}`;
     for ( let i=0; i<term.number; i++ ) {
       rolls.push({
         term,
-        id: `${denom}-${i}`,
+        id: `${denom}-${index}-${i}`,
         faces: term.faces,
         randomValue: Math.ceil(CONFIG.Dice.randomUniform() * term.faces),
         fulfillmentMethod: method,

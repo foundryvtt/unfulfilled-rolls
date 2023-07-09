@@ -1,5 +1,4 @@
 export default class ManualResolver extends FormApplication {
-
   constructor(terms, roll, callback) {
     super({});
     this.terms = terms;
@@ -15,7 +14,7 @@ export default class ManualResolver extends FormApplication {
       template: "modules/unfulfilled-rolls/templates/manual-resolver.hbs",
       title: "Manual Resolver",
       popOut: true,
-      width: 720,
+      width: 620,
       submitOnChange: false,
       submitOnClose: true,
       closeOnSubmit: true
@@ -27,10 +26,8 @@ export default class ManualResolver extends FormApplication {
   /** @override */
   async getData(options={}) {
     const context = await super.getData(options);
-
     context.terms = this.terms;
     context.roll = this.roll;
-
     return context;
   }
 
@@ -39,15 +36,13 @@ export default class ManualResolver extends FormApplication {
   /** @override */
   _getSubmitData(updateData = {}) {
     const data = super._getSubmitData(updateData);
-
-    // Find all input fields and add placeholder values to inputs with no value
     const inputs = this.form.querySelectorAll("input");
     for ( const input of inputs ) {
       if ( !input.value ) {
-        data[input.name] = input.placeholder;
+        const term = this.terms[Number(input.dataset.term)];
+        data[input.name] = term.randomValue;
       }
     }
-
     return data;
   }
 
@@ -55,10 +50,8 @@ export default class ManualResolver extends FormApplication {
 
   /** @override */
   async _updateObject(event, formData) {
-    // Turn the entries into a map
     const fulfilled = new Map();
     for ( const [id, result] of Object.entries(formData) ) {
-      // Parse the result as a number
       fulfilled.set(id, Number(result));
     }
     this.callback(fulfilled);
