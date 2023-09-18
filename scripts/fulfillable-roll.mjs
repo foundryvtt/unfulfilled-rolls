@@ -67,46 +67,46 @@ export async function _dieEvaluate(options) {
  * @private
  */
 function _identifyFulfillableTerms(terms, config) {
-  const toFulfill = [];
-  const diceTerms = terms.flatMap(t => _diceFromRollTerm(t, !!config.searchNestedDice));
-  for ( const [i, term] of diceTerms.entries() ) {
-    if ( !(term instanceof Die) ) continue;
-    if ( this._fulfilled?.length > 0 ) continue; // already fulfilled
+  /**
+   * An array of terms which can be fulfilled externally
+   * @type {FulfillableTerm[]}
+   */
+  const fulfillableTerms = [];
+
+  /**
+   * checks the given term to see if it is a Die term that can be fulfilled externally
+   *
+   * @param {Number} index
+   * @param {RollTerm} term
+   */
+  function identifyTerm(index, term) {
+    if ( !(term instanceof Die) ) return; // only Die terms
+    if ( term._fulfilled?.length > 0 ) return; // already fulfilled
+
     const method = config[`d${term.faces}`];
-    if ( !method || (method === "fvtt") ) continue;
-    toFulfill.push({term, method, index: i});
-  }
-  return toFulfill;
-}
-
-/* -------------------------------------------- */
-
-/**
- * Gets the list of Dice from the given RollTerm.
- *
- * If the given term is a Die term, returns an array with it.
- * If it responds to `.dice` with an array or set, it calls itself on each element and flattens the result (recursive).
- *
- * This helps with identifying nested Die terms in special RollTerms, for example for Pathfinder 2e's Groupings.
- *
- * @param {RollTerm} term            Term to evaluate
- * @param {Boolean} searchNestedDice If true, will search for nested Dice in special RollTerms (looks for term.dice) recursively
- * @returns {Die[]}                  An array of identified Die terms
- */
-function _diceFromRollTerm(term) {
-  if ( term instanceof Die ) return [term];
-
-  if ( "dice" in term ) {
-    if (term.dice instanceof Array) {
-      return term.dice.flatMap(_diceFromRollTerm)
-    }
-    if (term.dice instanceof Set) {
-      return [...term.dice].flatMap(_diceFromRollTerm)
+    if ( method && (method !== "fvtt") ) {
+      fulfillableTerms.push({term, method, index});
     }
   }
-  return []
-}
 
+  /**
+   * looks for dice term in list and adds them to toFulfill, recursively
+   * @param {RollTerm[]} list
+   */
+  function extractDiceFrom(list) {
+    for ( const [i, term] of list.entries() ) {
+      identifyTerm(i, term)
+
+      // Recursively identify inner terms
+      if ( "dice" in term ) {
+        extractDiceFrom(term.dice);
+      }
+    }
+  }
+
+  extractDiceFrom(terms)
+  return fulfillableTerms;
+}
 
 /* -------------------------------------------- */
 

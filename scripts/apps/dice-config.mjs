@@ -27,7 +27,6 @@ export default class DiceConfig extends FormApplication {
       dieType.fulfillmentMethod = config[dieType.id] || "fvtt";
     }
     context.dieTypes = dieTypes;
-    context.searchNestedDice = config.searchNestedDice || false;
     context.bluetoothDieProviders = CONFIG.Dice.BluetoothDieProviders;
     context.bluetoothDieProvider = config.bluetoothDieProvider || "none";
 
