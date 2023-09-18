@@ -1,6 +1,7 @@
 # IDE
 .idea/
 .vs/
+.history/
 
 # Foundry VTT
 *.lock

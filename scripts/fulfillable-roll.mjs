@@ -58,20 +58,53 @@ export async function _dieEvaluate(options) {
 
 /**
  * Identify terms in a Roll instance which are able to be externally fulfilled.
+ *
+ * Ignores terms which are already fulfilled.
+ *
  * @param {RollTerm[]} terms      Terms of the Roll instance
  * @param {object} config         The unfulfilled-rolls.diceSettings configuration
  * @returns {FulfillableTerm[]}   An array of identified terms
  * @private
  */
 function _identifyFulfillableTerms(terms, config) {
-  const toFulfill = [];
-  for ( const [i, term] of terms.entries() ) {
-    if ( !(term instanceof Die) ) continue;
+  /**
+   * An array of terms which can be fulfilled externally
+   * @type {FulfillableTerm[]}
+   */
+  const fulfillableTerms = [];
+
+  /**
+   * checks the given term to see if it is a Die term that can be fulfilled externally
+   *
+   * @param {RollTerm} term
+   */
+  function identifyTerm(term) {
+    if ( !(term instanceof Die) ) return; // only Die terms
+    if ( term._fulfilled?.length > 0 ) return; // already fulfilled
+
     const method = config[`d${term.faces}`];
-    if ( !method || (method === "fvtt") ) continue;
-    toFulfill.push({term, method, index: i});
+    if ( method && (method !== "fvtt") ) {
+      fulfillableTerms.push({term, method, index: fulfillableTerms.length});
+    }
   }
-  return toFulfill;
+
+  /**
+   * looks for dice term in list and adds them to toFulfill, recursively
+   * @param {RollTerm[]} list
+   */
+  function extractDiceFrom(list) {
+    for ( const term of list ) {
+      identifyTerm(term)
+
+      // Recursively identify inner terms
+      if ( "dice" in term ) {
+        extractDiceFrom(term.dice);
+      }
+    }
+  }
+
+  extractDiceFrom(terms)
+  return fulfillableTerms;
 }
 
 /* -------------------------------------------- */
