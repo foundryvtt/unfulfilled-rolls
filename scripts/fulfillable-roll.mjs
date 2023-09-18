@@ -58,6 +58,9 @@ export async function _dieEvaluate(options) {
 
 /**
  * Identify terms in a Roll instance which are able to be externally fulfilled.
+ *
+ * Ignores terms which are already fulfilled.
+ *
  * @param {RollTerm[]} terms      Terms of the Roll instance
  * @param {object} config         The unfulfilled-rolls.diceSettings configuration
  * @returns {FulfillableTerm[]}   An array of identified terms
@@ -65,14 +68,45 @@ export async function _dieEvaluate(options) {
  */
 function _identifyFulfillableTerms(terms, config) {
   const toFulfill = [];
-  for ( const [i, term] of terms.entries() ) {
+  const diceTerms = terms.flatMap(t => _diceFromRollTerm(t, !!config.searchNestedDice));
+  for ( const [i, term] of diceTerms.entries() ) {
     if ( !(term instanceof Die) ) continue;
+    if ( this._fulfilled?.length > 0 ) continue; // already fulfilled
     const method = config[`d${term.faces}`];
     if ( !method || (method === "fvtt") ) continue;
     toFulfill.push({term, method, index: i});
   }
   return toFulfill;
 }
+
+/* -------------------------------------------- */
+
+/**
+ * Gets the list of Dice from the given RollTerm.
+ *
+ * If the given term is a Die term, returns an array with it.
+ * If it responds to `.dice` with an array or set, it calls itself on each element and flattens the result (recursive).
+ *
+ * This helps with identifying nested Die terms in special RollTerms, for example for Pathfinder 2e's Groupings.
+ *
+ * @param {RollTerm} term            Term to evaluate
+ * @param {Boolean} searchNestedDice If true, will search for nested Dice in special RollTerms (looks for term.dice) recursively
+ * @returns {Die[]}                  An array of identified Die terms
+ */
+function _diceFromRollTerm(term) {
+  if ( term instanceof Die ) return [term];
+
+  if ( "dice" in term ) {
+    if (term.dice instanceof Array) {
+      return term.dice.flatMap(_diceFromRollTerm)
+    }
+    if (term.dice instanceof Set) {
+      return [...term.dice].flatMap(_diceFromRollTerm)
+    }
+  }
+  return []
+}
+
 
 /* -------------------------------------------- */
 
