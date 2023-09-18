@@ -76,16 +76,15 @@ function _identifyFulfillableTerms(terms, config) {
   /**
    * checks the given term to see if it is a Die term that can be fulfilled externally
    *
-   * @param {Number} index
    * @param {RollTerm} term
    */
-  function identifyTerm(index, term) {
+  function identifyTerm(term) {
     if ( !(term instanceof Die) ) return; // only Die terms
     if ( term._fulfilled?.length > 0 ) return; // already fulfilled
 
     const method = config[`d${term.faces}`];
     if ( method && (method !== "fvtt") ) {
-      fulfillableTerms.push({term, method, index});
+      fulfillableTerms.push({term, method, index: fulfillableTerms.length});
     }
   }
 
@@ -94,8 +93,8 @@ function _identifyFulfillableTerms(terms, config) {
    * @param {RollTerm[]} list
    */
   function extractDiceFrom(list) {
-    for ( const [i, term] of list.entries() ) {
-      identifyTerm(i, term)
+    for ( const term of list ) {
+      identifyTerm(term)
 
       // Recursively identify inner terms
       if ( "dice" in term ) {
