@@ -12,7 +12,7 @@
                 <i class="fa-solid {{term.icon}}"></i>
                 <p class="dice-term-faces">d{{term.faces}}</p>
             {{/if}}
-            <input type="number" class="dice-term-input" name="{{term.id}}" min="1" max="{{term.faces}}" step="1" data-term="{{i}}">
+            <input {{#unless i}}autofocus{{/unless}} type="number" class="dice-term-input" name="{{term.id}}" min="1" max="{{term.faces}}" step="1" data-term="{{i}}">
         </div>
         {{/each}}
     </div>
