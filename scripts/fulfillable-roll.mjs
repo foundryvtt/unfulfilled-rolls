@@ -97,7 +97,7 @@ function _identifyFulfillableTerms(terms, config) {
       identifyTerm(term)
 
       // Recursively identify inner terms
-      if ( "dice" in term ) {
+      if ( term.dice ) {
         extractDiceFrom(term.dice);
       }
     }
